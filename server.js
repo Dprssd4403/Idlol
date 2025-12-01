@@ -5,18 +5,18 @@ dotenv.config();
 
 const app = express();
 
-// Tu info
+// Tu información
 const RIOT_NAME = "Dprssd";
 const RIOT_TAG = "4403";
-const REGION_ROUTING = "americas"; // Para PUUID
-const REGION_PLATFORM = "la1"; // LAN
+const REGION_ROUTING = "americas"; // Para obtener PUUID
+const REGION_PLATFORM = "la1";     // LAN
 
 // Ruta principal
 app.get("/", (req, res) => {
     res.send("API de LoL funcionando ✔");
 });
 
-// Ruta de rango
+// Ruta para mostrar todo el rank
 app.get("/rank", async (req, res) => {
     try {
         // 1. Obtener PUUID
@@ -25,13 +25,13 @@ app.get("/rank", async (req, res) => {
         );
 
         if (!puuidRes.ok) {
-            return res.send("No se pudo obtener tu PUUID. Revisa tu API KEY.");
+            return res.send("No se pudo obtener el PUUID. Revisa tu API KEY.");
         }
 
         const puuidData = await puuidRes.json();
         const puuid = puuidData.puuid;
 
-        // 2. Obtener rank usando el PUUID (OJO: es summonerId, no PUUID directo)
+        // 2. Obtener Summoner ID + nivel
         const summonerRes = await fetch(
             `https://${REGION_PLATFORM}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${process.env.RIOT_API_KEY}`
         );
@@ -42,8 +42,9 @@ app.get("/rank", async (req, res) => {
 
         const summonerData = await summonerRes.json();
         const summonerId = summonerData.id;
+        const nivel = summonerData.summonerLevel;
 
-        // 3. Obtener rango
+        // 3. Obtener rangos (SoloQ y Flex)
         const rankedRes = await fetch(
             `https://${REGION_PLATFORM}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}?api_key=${process.env.RIOT_API_KEY}`
         );
@@ -53,16 +54,24 @@ app.get("/rank", async (req, res) => {
         }
 
         const rankedData = await rankedRes.json();
+
         const soloQ = rankedData.find(e => e.queueType === "RANKED_SOLO_5x5");
+        const flex = rankedData.find(e => e.queueType === "RANKED_FLEX_SR");
 
-        if (!soloQ) {
-            return res.send(`${RIOT_NAME} no tiene rank en SoloQ.`);
-        }
+        // Si no tiene SoloQ
+        const soloQText = soloQ
+            ? `${soloQ.tier} ${soloQ.rank} (${soloQ.leaguePoints} LP)`
+            : "Sin rango";
 
-        // 4. Respuesta personalizada
-        const texto = `${RIOT_NAME} (LAN) → ${soloQ.tier} ${soloQ.rank} - ${soloQ.leaguePoints} LP`;
+        // Si no tiene Flex
+        const flexText = flex
+            ? `${flex.tier} ${flex.rank} (${flex.leaguePoints} LP)`
+            : "Sin rango";
 
-        res.send(texto);
+        // Respuesta final
+        const respuesta = `${RIOT_NAME} (LAN) → SoloQ: ${soloQText} | Flex: ${flexText} | Nivel: ${nivel}`;
+
+        res.send(respuesta);
 
     } catch (error) {
         console.error(error);
