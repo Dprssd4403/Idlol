@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 
 const app = express();
 
-const RIOT_API_KEY = process.env.RGAPI-49cb2c26-e5ae-4d41-aa4d-b25a194b5648;
+const RIOT_API_KEY = RGAPI-49cb2c26-e5ae-4d41-aa4d-b25a194b5648;
 const REGION = "la1";
 const GAME_NAME = "Dprssd";
 const TAGLINE = "4403";
